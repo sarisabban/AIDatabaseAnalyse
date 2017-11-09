@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os , gzip , warnings , Bio.PDB , matplotlib.pyplot
+import os , gzip , warnings , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Functions
 
@@ -130,6 +130,59 @@ def RamaPlot(directory_to_search , plot_bool):
 		matplotlib.pyplot.savefig('RamaPlot.pdf')
 	else:
 		pass
+
+def Numbers(directory_to_search , plot_bool , show_plot):
+	''' Count the number of secondary structures in each protein '''
+	''' Returns a tuple of lists with loop numbers [0], helix number [1], and strand number [2] '''
+	current = os.getcwd()
+	os.chdir(directory_to_search)
+	LoopLen = list()
+	HelixLen = list()
+	StrandLen = list()
+	with warnings.catch_warnings(record=True) as w:							#Supress Bio.PDB user warnings
+		for TheFile in os.listdir('.'):
+			try:
+				parser = Bio.PDB.PDBParser()
+				structure = parser.get_structure(TheFile.split('.')[0] , TheFile)
+				model = structure[0]
+				dssp = Bio.PDB.DSSP(model , TheFile , acc_array='Wilke')
+				Loop = list()
+				Helix = list()
+				Strand = list()
+				for res in dssp:
+					if res[2] == '-' or res[2] == 'T' or res[2] == 'S':		#Loop (DSSP code is - or T or S)
+						Loop.append('L')
+					elif res[2] == 'G' or res[2] == 'H' or res[2] == 'I':		#Helix (DSSP code is G or H or I)
+						Helix.append('H')
+					elif res[2] == 'B' or res[2] == 'E':				#Strand (DSSP code is B or E)
+						Strand.append('S')
+				LoopLen.append(len(Loop))
+				HelixLen.append(len(Helix))
+				StrandLen.append(len(Strand))
+				Loop = list()
+				Helix = list()
+				Strand = list()
+			except Exception as TheError:
+				print(TheFile , '<---' , TheError)
+			print('Counted Secondary Structures for\t' , TheFile.split('.')[0])
+	os.chdir(current)
+	#Plot graph
+	if plot_bool == 1:
+		matplotlib.rcParams['axes.facecolor'] = '0.5'
+		AX = mpl_toolkits.mplot3d.Axes3D(matplotlib.pyplot.figure())
+		AX.scatter(LoopLen , HelixLen , StrandLen , c = 'red' , s = 0.5)
+		AX.set_title('Number of Secondary Structures Plot' , y = 1.02)
+		AX.set_xlabel('Number of Loops')
+		AX.set_ylabel('Number of Helices')
+		AX.set_zlabel('Number of Strands')
+		if show_plot == 1:
+			matplotlib.pyplot.savefig('SSnumPlot.pdf')
+			matplotlib.pyplot.show()
+		else:
+			matplotlib.pyplot.savefig('SSnumPlot.pdf')
+	else:
+		pass
+	return(LoopLen , HelixLen , StrandLen)
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Database()
 #RamaPlot('PDBDatabase' , 1)
