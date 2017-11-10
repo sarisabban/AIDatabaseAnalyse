@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os , gzip , warnings , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d
+import os , gzip , warnings , fractions , functools , numpy , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Functions
 
@@ -133,19 +133,25 @@ def RamaPlot(directory_to_search , plot_bool):
 
 def Numbers(directory_to_search , plot_bool , show_plot):
 	''' Count the number of secondary structures in each protein '''
-	''' Returns a tuple of lists with loop numbers [0], helix number [1], and strand number [2] '''
+	''' Returns a tuple of lists with loop numbers [0], helix number [1], strand number [2], protein's size [3] '''
 	current = os.getcwd()
 	os.chdir(directory_to_search)
 	LoopLen = list()
 	HelixLen = list()
 	StrandLen = list()
+	Sizelen = list()
 	with warnings.catch_warnings(record=True) as w:							#Supress Bio.PDB user warnings
 		for TheFile in os.listdir('.'):
 			try:
 				parser = Bio.PDB.PDBParser()
 				structure = parser.get_structure(TheFile.split('.')[0] , TheFile)
 				model = structure[0]
+				ppb = Bio.PDB.Polypeptide.PPBuilder()
+				Type = ppb.build_peptides(structure , aa_only=True)
 				dssp = Bio.PDB.DSSP(model , TheFile , acc_array='Wilke')
+				for aa in dssp:
+					length = aa[0]
+				Sizelen.append(length)
 				Loop = list()
 				Helix = list()
 				Strand = list()
@@ -182,7 +188,37 @@ def Numbers(directory_to_search , plot_bool , show_plot):
 			matplotlib.pyplot.savefig('SSnumPlot.pdf')
 	else:
 		pass
-	return(LoopLen , HelixLen , StrandLen)
+	return(LoopLen , HelixLen , StrandLen , Sizelen)
+
+def Probability(TheList , plot_bool , show_plot):
+	''' Calculates the probability of secondary structures given their total numbers and protein sizes [output from the Numbers() function] '''
+	''' Returns a tuple with probability of loop [0], helix [1], and strand [2] '''
+	loopfrac = list()
+	helixfrac = list()
+	strandfrac = list()	
+	for loop , helix , strand , size in zip(TheList[0] , TheList[1] , TheList[2] , TheList[3]):
+		loopfrac.append(float(loop / size))
+		helixfrac.append(float(helix / size))
+		strandfrac.append(float(strand / size))
+	#Plot graph
+	if plot_bool == 1:
+		matplotlib.rcParams['axes.facecolor'] = '0.5'
+		AX = mpl_toolkits.mplot3d.Axes3D(matplotlib.pyplot.figure())
+		AX.scatter(loopfrac , helixfrac , strandfrac , c = 'red' , s = 0.5)
+		AX.set_title('Probability of Secondary Structures Plot' , y = 1.02)
+		AX.set_xlabel('Probability of Loops')
+		AX.set_ylabel('Probability of Helices')
+		AX.set_zlabel('Probability of Strands')
+		if show_plot == 1:
+			matplotlib.pyplot.savefig('SSproPlot.pdf')
+			matplotlib.pyplot.show()
+		else:
+			matplotlib.pyplot.savefig('SSnumPlot.pdf')
+	else:
+		pass
+
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Database()
 #RamaPlot('PDBDatabase' , 1)
+#TheList = Numbers('PDBDatabase' , 0 , 0)
+#Probability(TheList , 1 , 1)
