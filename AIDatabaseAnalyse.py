@@ -77,7 +77,7 @@ def Database():
 
 def RamaPlot(directory_to_search , plot_bool):
 	''' Extract all the Phi and Psi angles of each residue in all structures in a directory and then plot them '''
-	''' Generates the RamaPlot.pdf file '''
+	''' Generates a Ramachandran plot called RamaPlot.pdf '''
 	current = os.getcwd()
 	os.chdir(directory_to_search)
 	Loop_phi = list()
@@ -106,7 +106,7 @@ def RamaPlot(directory_to_search , plot_bool):
 						Strand_psi.append(res[5])				#(PHI , PSI)
 			except Exception as TheError:
 				print(TheFile , '<---' , TheError)
-			print('Ramachandran Plot - Got Phi and Psi Angels for\t' , TheFile.split('.')[0])
+			print('Ramachandran plot - got phi and psi angels for\t' , TheFile.split('.')[0])
 	#Replace 360 degrees with 0 degrees
 	Loop_phi = [0.0 if x == 360.0 else x for x in Loop_phi]
 	Loop_psi = [0.0 if x == 360.0 else x for x in Loop_psi]
@@ -114,6 +114,7 @@ def RamaPlot(directory_to_search , plot_bool):
 	Helix_psi = [0.0 if x == 360.0 else x for x in Helix_psi]
 	Strand_phi = [0.0 if x == 360.0 else x for x in Strand_phi]
 	Strand_psi = [0.0 if x == 360.0 else x for x in Strand_psi]
+	os.chdir(current)
 	#Plot full graph
 	if plot_bool == 1:
 		matplotlib.rcParams['axes.facecolor'] = '0.8'
@@ -126,14 +127,13 @@ def RamaPlot(directory_to_search , plot_bool):
 		matplotlib.pyplot.ylabel('Psi Angels')
 		matplotlib.pyplot.ylim(-180 , 180)
 		matplotlib.pyplot.xlim(-180 , 180)
-		os.chdir(current)
 		matplotlib.pyplot.savefig('RamaPlot.pdf')
 	else:
 		pass
 
 def Numbers(directory_to_search , plot_bool , show_plot):
 	''' Count the number of secondary structures in each protein '''
-	''' Returns a tuple of lists with loop numbers [0], helix number [1], strand number [2], protein's size [3] '''
+	''' Generates a plot with the number of each secondary structure in each protein called SSnumPlot and returns a tuple of lists with loop numbers [0], helix number [1], strand number [2], protein's size [3] '''
 	current = os.getcwd()
 	os.chdir(directory_to_search)
 	LoopLen = list()
@@ -170,7 +170,7 @@ def Numbers(directory_to_search , plot_bool , show_plot):
 				Strand = list()
 			except Exception as TheError:
 				print(TheFile , '<---' , TheError)
-			print('Counted Secondary Structures for\t' , TheFile.split('.')[0])
+			print('Counted secondary structures for\t' , TheFile.split('.')[0])
 	os.chdir(current)
 	#Plot graph
 	if plot_bool == 1:
@@ -192,7 +192,7 @@ def Numbers(directory_to_search , plot_bool , show_plot):
 
 def Probability(TheList , plot_bool , show_plot):
 	''' Calculates the probability of secondary structures given their total numbers and protein sizes [output from the Numbers() function] '''
-	''' Returns a tuple with probability of loop [0], helix [1], and strand [2] '''
+	''' Generates a plot with the probability of each secondary structure called SSnumPlot.pdf '''
 	loopfrac = list()
 	helixfrac = list()
 	strandfrac = list()	
@@ -213,12 +213,96 @@ def Probability(TheList , plot_bool , show_plot):
 			matplotlib.pyplot.savefig('SSproPlot.pdf')
 			matplotlib.pyplot.show()
 		else:
-			matplotlib.pyplot.savefig('SSnumPlot.pdf')
+			matplotlib.pyplot.savefig('SSproPlot.pdf')
 	else:
 		pass
 
+def Length(directory_to_search , plot_bool , show_plot):
+	''' Caulculates the average length of secondary structures within each protein '''
+	''' Generates a plot with the average length of each secondary structure in each protein called SSlenPlot.pdb '''
+	current = os.getcwd()
+	os.chdir(directory_to_search)
+	Loopav = list()
+	Helixav = list()
+	Strandav = list()
+	Sizenum = list()	
+	with warnings.catch_warnings(record=True) as w:							#Supress Bio.PDB user warnings
+		for TheFile in os.listdir('.'):
+			try:
+				parser = Bio.PDB.PDBParser()
+				structure = parser.get_structure(TheFile.split('.')[0] , TheFile)
+				model = structure[0]
+				ppb = Bio.PDB.Polypeptide.PPBuilder()
+				Type = ppb.build_peptides(structure , aa_only=True)
+				dssp = Bio.PDB.DSSP(model , TheFile , acc_array='Wilke')
+				SS = list()
+				Size = None
+				#Identify length of structure
+				for aa in dssp:
+					Size = aa[0]
+				#Identify secondary structures
+				for res in dssp:
+					if res[2] == '-' or res[2] == 'T' or res[2] == 'S':		#Loop (DSSP code is - or T or S)
+						SS.append('L')
+					elif res[2] == 'G' or res[2] == 'H' or res[2] == 'I':		#Helix (DSSP code is G or H or I)
+						SS.append('H')
+					elif res[2] == 'B' or res[2] == 'E':				#Strand (DSSP code is B or E)
+						SS.append('S')
+				FinalSS = ''.join(SS)
+				#Loop
+				Loop = list()
+				for numb in FinalSS.replace('H' , '.').replace('S' , '.').split('.'):
+					value = len(numb)
+					if value == 0:
+						pass
+					else:
+						Loop.append(value)
+				if Loop == []: Loop.append(0)
+				#Helix
+				Helix = list()
+				for numb in FinalSS.replace('L' , '.').replace('S' , '.').split('.'):
+					value = len(numb)
+					if value == 0:
+						pass
+					else:
+						Helix.append(value)
+				if Helix == []: Helix.append(0)
+				#Strand
+				Strand = list()
+				for numb in FinalSS.replace('H' , '.').replace('L' , '.').split('.'):
+					value = len(numb)
+					if value == 0:
+						pass
+					else:
+						Strand.append(value)
+				if Strand == []: Strand.append(0)
+				Loopav.append(numpy.mean(Loop))
+				Helixav.append(numpy.mean(Helix))
+				Strandav.append(numpy.mean(Strand))
+				Sizenum.append(Size)
+			except Exception as TheError:
+				print(TheFile , '<---' , TheError)
+			print('Counted average length of all secondary structures for\t' , TheFile.split('.')[0])
+	os.chdir(current)
+	#Plot graph
+	if plot_bool == 1:
+		matplotlib.rcParams['axes.facecolor'] = '0.5'
+		AX = mpl_toolkits.mplot3d.Axes3D(matplotlib.pyplot.figure())
+		AX.scatter(Sizenum , Helixav , Strandav , c = 'red' , s = 0.5)
+		AX.set_title('Number of Helices and Strands Plot' , y = 1.02)
+		AX.set_xlabel('Size of Protein')
+		AX.set_ylabel('Average Length of Helices')
+		AX.set_zlabel('Average Length of Strands')
+		if show_plot == 1:
+			matplotlib.pyplot.savefig('SSlenPlot.pdf')
+			matplotlib.pyplot.show()
+		else:
+			matplotlib.pyplot.savefig('SSlenPlot.pdf')
+	else:
+		pass
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Database()
 #RamaPlot('PDBDatabase' , 1)
-#TheList = Numbers('PDBDatabase' , 0 , 0)
+#TheList = Numbers('PDBDatabase' , 1 , 1)
 #Probability(TheList , 1 , 1)
+#Length('PDBDatabase' , 1 , 1)
