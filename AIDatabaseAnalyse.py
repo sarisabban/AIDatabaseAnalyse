@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os , gzip , warnings , fractions , functools , numpy , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d
+import os , gzip , warnings , itertools , fractions , functools , numpy , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d , pandas
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Functions
 
@@ -77,15 +77,11 @@ def Database():
 
 def RamaPlot(directory_to_search , plot_bool):
 	''' Extract all the Phi and Psi angles of each residue in all structures in a directory and then plot them '''
-	''' Generates a Ramachandran plot called RamaPlot.pdf '''
+	''' Generates a Ramachandran plot called RamaPlot.pdf and saves the data for futher analysis Loop_phi [0] , Loop_psi [1] , Helix_phi [2] , Helix_psi [3] , Strand_phi [4] , and Strand_psi [5] in the RamaPlot.csv file'''
+	data = open('RamaPlot.csv' , 'a')
+	data.write('Loop PHI;Loop PSI;Helix PHI;Helix PSI;Strand PHI;Strand PSI\n')
 	current = os.getcwd()
 	os.chdir(directory_to_search)
-	Loop_phi = list()
-	Loop_psi = list()
-	Helix_phi = list()
-	Helix_psi = list()
-	Strand_phi = list()
-	Strand_psi = list()
 	#Identify the Phi and Psi angels for each secondary structure
 	with warnings.catch_warnings(record=True) as w:							#Supress Bio.PDB user warnings
 		for TheFile in os.listdir('.'):
@@ -94,6 +90,12 @@ def RamaPlot(directory_to_search , plot_bool):
 				structure = parser.get_structure(TheFile.split('.')[0] , TheFile)
 				model = structure[0]
 				dssp = Bio.PDB.DSSP(model , TheFile , acc_array='Wilke')
+				Loop_phi = list()
+				Loop_psi = list()
+				Helix_phi = list()
+				Helix_psi = list()
+				Strand_phi = list()
+				Strand_psi = list()
 				for res in dssp:
 					if res[2] == '-' or res[2] == 'T' or res[2] == 'S':		#Loop (DSSP code is - or T or S)
 						Loop_phi.append(res[4])					#(PHI , PSI)
@@ -104,23 +106,28 @@ def RamaPlot(directory_to_search , plot_bool):
 					elif res[2] == 'B' or res[2] == 'E':				#Strand (DSSP code is B or E)
 						Strand_phi.append(res[4])				#(PHI , PSI)
 						Strand_psi.append(res[5])				#(PHI , PSI)
+				#Replace 360 degrees with 0 degrees
+				Loop_phi = [0.0 if x == 360.0 else x for x in Loop_phi]
+				Loop_psi = [0.0 if x == 360.0 else x for x in Loop_psi]
+				Helix_phi = [0.0 if x == 360.0 else x for x in Helix_phi]
+				Helix_psi = [0.0 if x == 360.0 else x for x in Helix_psi]
+				Strand_phi = [0.0 if x == 360.0 else x for x in Strand_phi]
+				Strand_psi = [0.0 if x == 360.0 else x for x in Strand_psi]
+				for Lph , Lps , Hph , Hps , Sph , Sps in itertools.zip_longest(Loop_phi , Loop_psi , Helix_phi , Helix_psi , Strand_phi , Strand_psi , fillvalue = ''):
+					line = str(Lph) + ';' + str(Lps) + ';' + str(Hph) + ';' + str(Hps) + ';' + str(Sph) + ';' + str(Sps) + '\n'
+					data.write(line)
 			except Exception as TheError:
 				print(TheFile , '<---' , TheError)
 			print('Ramachandran plot - got phi and psi angels for\t' , TheFile.split('.')[0])
-	#Replace 360 degrees with 0 degrees
-	Loop_phi = [0.0 if x == 360.0 else x for x in Loop_phi]
-	Loop_psi = [0.0 if x == 360.0 else x for x in Loop_psi]
-	Helix_phi = [0.0 if x == 360.0 else x for x in Helix_phi]
-	Helix_psi = [0.0 if x == 360.0 else x for x in Helix_psi]
-	Strand_phi = [0.0 if x == 360.0 else x for x in Strand_phi]
-	Strand_psi = [0.0 if x == 360.0 else x for x in Strand_psi]
+	data.close()
 	os.chdir(current)
 	#Plot full graph
 	if plot_bool == 1:
+		df = pandas.read_csv('RamaPlot.csv' , sep=';')
 		matplotlib.rcParams['axes.facecolor'] = '0.8'
-		matplotlib.pyplot.scatter(Loop_phi, Loop_psi , label='Loop' , color = '#038125' , s = 0.5)
-		matplotlib.pyplot.scatter(Helix_phi, Helix_psi , label='Helix' , color = '#c82100' , s = 0.5)
-		matplotlib.pyplot.scatter(Strand_phi, Strand_psi , label='Strand' , color = '#ffe033' , s = 0.5)
+		L = df.plot(x = 'Loop PHI' , y = 'Loop PSI' , kind = 'scatter' , label='Loop' , color = '#038125' , s = 0.5)
+		H = df.plot(x = 'Helix PHI' , y = 'Helix PSI' , kind = 'scatter'  , label='Helix' , color = '#c82100' , s = 0.5 , ax = L)
+		S = df.plot(x = 'Strand PHI' , y = 'Strand PSI' , kind = 'scatter'  , label='Strand' , color = '#ffe033' , s = 0.5 , ax = H)
 		matplotlib.pyplot.legend(bbox_to_anchor = (0. , 1.02 , 1. , .102) , loc = 3 , ncol = 3 , mode = 'expand' , borderaxespad = 0. , facecolor = '0.9' , markerscale = 10)
 		matplotlib.pyplot.title('Ramachandran Plot' , y = 1.08)
 		matplotlib.pyplot.xlabel('Phi Angels')
@@ -302,7 +309,7 @@ def Length(directory_to_search , plot_bool , show_plot):
 		pass
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Database()
-#RamaPlot('PDBDatabase' , 1)
+RamaPlot('PDBDatabase' , 1)
 #TheList = Numbers('PDBDatabase' , 1 , 1)
 #Probability(TheList , 1 , 1)
 #Length('PDBDatabase' , 1 , 1)
