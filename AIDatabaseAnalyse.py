@@ -113,7 +113,7 @@ def RamaPlot(directory_to_search , plot_bool):
 				Helix_psi = [0.0 if x == 360.0 else x for x in Helix_psi]
 				Strand_phi = [0.0 if x == 360.0 else x for x in Strand_phi]
 				Strand_psi = [0.0 if x == 360.0 else x for x in Strand_psi]
-				for Lph , Lps , Hph , Hps , Sph , Sps in itertools.zip_longest(Loop_phi , Loop_psi , Helix_phi , Helix_psi , Strand_phi , Strand_psi , fillvalue = ''):
+				for Lph , Lps , Hph , Hps , Sph , Sps in itertools.zip_longest(Loop_phi , Loop_psi , Helix_phi , Helix_psi , Strand_phi , Strand_psi , fillvalue = '0'):
 					line = str(Lph) + ';' + str(Lps) + ';' + str(Hph) + ';' + str(Hps) + ';' + str(Sph) + ';' + str(Sps) + '\n'
 					data.write(line)
 			except Exception as TheError:

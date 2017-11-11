@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os , math , gzip , warnings , functools , random , fractions , numpy , sklearn.cluster , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d
+import os , math , gzip , warnings , functools , random , fractions , pandas , numpy , sklearn.cluster , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Functions
 
@@ -121,16 +121,14 @@ print('[+] GOOD\t' , TheFile)
 def DBSCAN(TheFile):
 	''' Calculates the cluster centers of the Ramachandran plot, [output of the RamaPlot() function] '''
 	''' Returns cluster centers '''
-	df = pandas.read_csv('RamaPlot.csv' , sep=';')
-
-	ML = sklearn.cluster.DBSCAN(eps = 0.8 , min_samples = 19)
-	print(ML)
-
-
+	df = pandas.read_csv(TheFile , sep=';')
+	L = df[['Loop PHI' , 'Loop PSI']]
+	H = df[['Helix PHI' , 'Helix PSI']]
+	S = df[['Strand PHI' , 'Strand PSI']]
+	ML = sklearn.cluster.DBSCAN(eps = 2 , min_samples = 10).fit(L)
+	print(ML.labels_)
 #--------------------------------------------------------------------------------------------------------------------------------------
 DBSCAN('RamaPlot.csv')
-
-
 '''
 * DBSCAN center of clusters
 * average angles plot
