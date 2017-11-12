@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os , gzip , warnings , itertools , fractions , functools , numpy , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d , pandas
+import os , gzip , warnings , itertools , numpy , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d , pandas
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Functions
 
@@ -98,14 +98,14 @@ def RamaPlot(directory_to_search , plot_bool):
 				Strand_psi = list()
 				for res in dssp:
 					if res[2] == '-' or res[2] == 'T' or res[2] == 'S':		#Loop (DSSP code is - or T or S)
-						Loop_phi.append(res[4])					#(PHI , PSI)
-						Loop_psi.append(res[5])					#(PHI , PSI)
+						Loop_phi.append(res[4])					#(PHI)
+						Loop_psi.append(res[5])					#(PSI)
 					elif res[2] == 'G' or res[2] == 'H' or res[2] == 'I':		#Helix (DSSP code is G or H or I)
-						Helix_phi.append(res[4])				#(PHI , PSI)
-						Helix_psi.append(res[5])				#(PHI , PSI)
+						Helix_phi.append(res[4])				#(PHI)
+						Helix_psi.append(res[5])				#(PSI)
 					elif res[2] == 'B' or res[2] == 'E':				#Strand (DSSP code is B or E)
-						Strand_phi.append(res[4])				#(PHI , PSI)
-						Strand_psi.append(res[5])				#(PHI , PSI)
+						Strand_phi.append(res[4])				#(PHI)
+						Strand_psi.append(res[5])				#(PSI)
 				#Replace 360 degrees with 0 degrees
 				Loop_phi = [0.0 if x == 360.0 else x for x in Loop_phi]
 				Loop_psi = [0.0 if x == 360.0 else x for x in Loop_psi]
@@ -307,9 +307,199 @@ def Length(directory_to_search , plot_bool , show_plot):
 			matplotlib.pyplot.savefig('SSlenPlot.pdf')
 	else:
 		pass
+
+def Average(directory_to_search , plot_bool , show_plot):
+	current = os.getcwd()
+	os.chdir(directory_to_search)
+	TheL = list()
+	TheH = list()
+	TheS = list()
+	#Identify the Phi and Psi angels for each secondary structure
+	with warnings.catch_warnings(record=True) as w:							#Supress Bio.PDB user warnings
+		for TheFile in os.listdir('.'):
+			try:
+				parser = Bio.PDB.PDBParser()
+				structure = parser.get_structure(TheFile.split('.')[0] , TheFile)
+				model = structure[0]
+				dssp = Bio.PDB.DSSP(model , TheFile , acc_array='Wilke')
+				SS = list()
+				Tor = list()
+				for res in dssp:
+					if res[2] == '-' or res[2] == 'T' or res[2] == 'S':		#Loop (DSSP code is - or T or S)
+						SS.append('L')						#Secondary Structure
+						Tor.append((res[4] , res[5]))				#(PHI , PSI)
+					elif res[2] == 'G' or res[2] == 'H' or res[2] == 'I':		#Helix (DSSP code is G or H or I)
+						SS.append('H')						#Secondary Structure
+						Tor.append((res[4] , res[5]))				#(PHI , PSI)
+					elif res[2] == 'B' or res[2] == 'E':				#Strand (DSSP code is B or E)
+						SS.append('S')						#Secondary Structure
+						Tor.append((res[4] , res[5]))				#(PHI , PSI)
+				Tor = [(0.0 , x[1]) if x[0] == 360.0 else x for x in Tor]
+				Tor = [(x[0] , 0.0) if x[1] == 360.0 else x for x in Tor]
+				SecStruct = ''.join(SS)
+				#Loop
+				loop = list()
+				for numb in SecStruct.replace('H' , '.').replace('S' , '.').split('.'):
+					value = len(numb)
+					if value == 0:
+						pass
+					else:
+						loop.append(value)
+				#PHI loop angels
+				LPHI = [0]
+				angel = 0
+				for res , ang in zip(SS , Tor):			#Loop both lists
+
+					if (res == 'H' or res == 'S'):		#If there is S or H from SS list ---> angel will become 0
+						if angel != 0:			#And if the angel is a number other than 0
+							LPHI.append(angel)	#Append it
+							angel = 0		#Make the angel 0
+					else:					#If there is L from SS list
+						angel = angel + ang[0]		#Make angel value from Tor[0] list
+				LPHI.append(Tor[-1][0])
+				#PSI loop angels
+				LPSI = list()
+				angel = 0
+				for res , ang in zip(SS , Tor):
+					if (res == 'H' or res == 'S'):
+						if angel != 0:
+							LPSI.append(angel)
+							angel = 0
+					else:
+						angel = angel + ang[1]
+				LPSI.append(0)
+				#Average loop angels
+				LOOP = list()
+				del LPHI[0]
+				del LPSI[-1]
+				for L , Ph , Ps in zip(loop , LPHI , LPSI):
+					LOOP.append(((L) , (Ph/L) , (Ps/L)))
+				#Helix
+				helix = list()
+				for numb in SecStruct.replace('L' , '.').replace('S' , '.').split('.'):
+					value = len(numb)
+					if value == 0:
+						pass
+					else:
+						helix.append(value)
+				helixNumb = len(helix)
+				#PHI helix angels
+				HPHI = list()
+				angel = 0
+				for res , ang in zip(SS , Tor):
+					if (res == 'L' or res == 'S'):
+						if angel != 0:
+							HPHI.append(angel)
+							angel = 0
+					else:
+						angel = angel + ang[0]
+				#PSI helix angels
+				HPSI = list()
+				angel = 0
+				for res , ang in zip(SS , Tor):
+					if (res == 'L' or res == 'S'):
+						if angel != 0:
+							HPSI.append(angel)
+							angel = 0
+					else:
+						angel = angel + ang[1]
+
+				#Average helix angels
+				HELIX = list()
+				for L , Ph , Ps in zip(helix , HPHI , HPSI):
+					HELIX.append(((L) , (Ph/L) , (Ps/L)))
+				#Strand
+				strand = list()
+				for numb in SecStruct.replace('L' , '.').replace('H' , '.').split('.'):
+					value = len(numb)
+					if value == 0:
+						pass
+					else:
+						strand.append(value)
+				strandNumb = len(strand)
+				#PHI strand angels
+				SPHI = list()
+				angel = 0
+				for res , ang in zip(SS , Tor):
+					if (res == 'L' or res == 'H'):
+						if angel != 0:
+							SPHI.append(angel)
+							angel = 0
+					else:
+						angel = angel + ang[0]
+				#PSI strand angels
+				SPSI = list()
+				angel = 0
+				for res , ang in zip(SS , Tor):
+					if (res == 'L' or res == 'H'):
+						if angel != 0:
+							SPSI.append(angel)
+							angel = 0
+					else:
+						angel = angel + ang[1]
+				#Average strand angels
+				STRAND = list()
+				for L , Ph , Ps in zip(strand , SPHI , SPSI):
+					STRAND.append(((L) , (Ph/L) , (Ps/L)))
+				#Organise final lists
+				for item in LOOP:
+					TheL.append(item)
+				for item in HELIX:
+					TheH.append(item)
+				for item in STRAND:
+					TheS.append(item)
+
+			except Exception as TheError:
+				print(TheFile , '<---' , TheError)
+			print('Got average phi and psi angels and secondary structure lengths for\t' , TheFile.split('.')[0])
+	os.chdir(current)
+	TheLLe = list()
+	TheLph = list()
+	TheLps = list()
+	TheHLe = list()
+	TheHph = list()
+	TheHps = list()
+	TheSLe = list()
+	TheSph = list()
+	TheSps = list()
+	for item in TheL:
+		TheLLe.append(item[0])
+		TheLph.append(item[1])
+		TheLps.append(item[2])
+	for item in TheH:
+		TheHLe.append(item[0])
+		TheHph.append(item[1])
+		TheHps.append(item[2])
+	for item in TheS:
+		TheSLe.append(item[0])
+		TheSph.append(item[1])
+		TheSps.append(item[2])
+	#Plot graph
+	if plot_bool == 1:
+		matplotlib.rcParams['axes.facecolor'] = '0.5'
+		AX = mpl_toolkits.mplot3d.Axes3D(matplotlib.pyplot.figure())
+		#L_plt = AX.scatter(TheLph , TheLps , TheLLe , c = '#038125' , s = 0.5)
+		H_plt = AX.scatter(TheHph , TheHps , TheHLe , c = '#c82100' , s = 0.5)
+		S_plt = AX.scatter(TheSph , TheSps , TheSLe , c = '#ffe033' , s = 0.5)
+		AX.set_title('Number of Helices and Strands Plot' , y = 1.02)
+		AX.set_xlim3d(-180, 180)
+		AX.set_ylim3d(-180, 180)
+		AX.set_xlabel('Phi')
+		AX.set_ylabel('Psi')
+		AX.set_zlabel('Length of Secondary Structure')
+		#AX.legend([L_plt , H_plt , S_plt], ['Loop' , 'Helix' , 'Strand'] , markerscale = 10)
+		AX.legend([H_plt , S_plt], ['Helix' , 'Strand'] , markerscale = 10)
+		if show_plot == 1:
+			matplotlib.pyplot.savefig('SSlenPlot.pdf')
+			matplotlib.pyplot.show()
+		else:
+			matplotlib.pyplot.savefig('SSlenPlot.pdf')
+	else:
+ 		pass
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Database()
-RamaPlot('PDBDatabase' , 1)
+#RamaPlot('PDBDatabase' , 1)
 #TheList = Numbers('PDBDatabase' , 1 , 1)
 #Probability(TheList , 1 , 1)
 #Length('PDBDatabase' , 1 , 1)
+#Average('PDBDatabase' , 1 , 1)
