@@ -125,9 +125,9 @@ def RamaPlot(directory_to_search , plot_bool):
 	if plot_bool == 1:
 		df = pandas.read_csv('RamaPlot.csv' , sep=';')
 		matplotlib.rcParams['axes.facecolor'] = '0.8'
-		L = df.plot(x = 'Loop PHI' , y = 'Loop PSI' , kind = 'scatter' , label='Loop' , color = '#038125' , s = 0.5)
-		H = df.plot(x = 'Helix PHI' , y = 'Helix PSI' , kind = 'scatter'  , label='Helix' , color = '#c82100' , s = 0.5 , ax = L)
-		S = df.plot(x = 'Strand PHI' , y = 'Strand PSI' , kind = 'scatter'  , label='Strand' , color = '#ffe033' , s = 0.5 , ax = H)
+		L = df.plot(x = 'Loop PHI' , y = 'Loop PSI' , kind = 'scatter' , label = 'Loop' , color = '#038125' , s = 0.5)
+		H = df.plot(x = 'Helix PHI' , y = 'Helix PSI' , kind = 'scatter'  , label = 'Helix' , color = '#c82100' , s = 0.5 , ax = L)
+		S = df.plot(x = 'Strand PHI' , y = 'Strand PSI' , kind = 'scatter'  , label = 'Strand' , color = '#ffe033' , s = 0.5 , ax = H)
 		matplotlib.pyplot.legend(bbox_to_anchor = (0. , 1.02 , 1. , .102) , loc = 3 , ncol = 3 , mode = 'expand' , borderaxespad = 0. , facecolor = '0.9' , markerscale = 10)
 		matplotlib.pyplot.title('Ramachandran Plot' , y = 1.08)
 		matplotlib.pyplot.xlabel('Phi Angels')
@@ -496,6 +496,49 @@ def Average(directory_to_search , plot_bool , show_plot):
 			matplotlib.pyplot.savefig('SSlenPlot.pdf')
 	else:
  		pass
+
+def KM(TheFile):
+	''' Calculates the cluster centers of the Ramachandran plot, [output of the RamaPlot() function] '''
+	''' Returns cluster centers '''
+	df = pandas.read_csv(TheFile , sep = ';')
+	L = df[['Loop PHI' , 'Loop PSI']]
+	H = df[['Helix PHI' , 'Helix PSI']]
+	S = df[['Strand PHI' , 'Strand PSI']]
+	MLL = sklearn.cluster.KMeans(n_clusters = 5 , n_init = 10 , init = 'k-means++' , max_iter = 300).fit(L)
+	MLH = sklearn.cluster.KMeans(n_clusters = 3 , n_init = 10 , init = 'k-means++' , max_iter = 300).fit(H)
+	MLS = sklearn.cluster.KMeans(n_clusters = 5 , n_init = 10 , init = 'k-means++' , max_iter = 300).fit(S)
+	#Loop plot
+	matplotlib.rcParams['axes.facecolor'] = '0.8'
+	matplotlib.pyplot.scatter(df['Loop PHI'] , df['Loop PSI'] , color = '#038125' , s = 0.5)
+	matplotlib.pyplot.scatter(MLL.cluster_centers_[:,0] , MLL.cluster_centers_[:,1] , color = 'black')
+	matplotlib.pyplot.title('Ramachandran Plot')
+	matplotlib.pyplot.xlabel('Phi Angels')
+	matplotlib.pyplot.ylabel('Psi Angels')
+	matplotlib.pyplot.ylim(-180 , 180)
+	matplotlib.pyplot.xlim(-180 , 180)
+	matplotlib.pyplot.show()
+	#Helix plot
+	matplotlib.pyplot.scatter(df['Helix PHI'] , df['Helix PSI'] , color = '#c82100' , s = 0.5)
+	matplotlib.pyplot.scatter(MLH.cluster_centers_[:,0] , MLH.cluster_centers_[:,1] , color = 'black')
+	matplotlib.pyplot.title('Ramachandran Plot')
+	matplotlib.pyplot.xlabel('Phi Angels')
+	matplotlib.pyplot.ylabel('Psi Angels')
+	matplotlib.pyplot.ylim(-180 , 180)
+	matplotlib.pyplot.xlim(-180 , 180)
+	matplotlib.pyplot.show()
+	#Strand plot
+	matplotlib.pyplot.scatter(df['Strand PHI'] , df['Strand PSI'] , color = '#ffe033' , s = 0.5)
+	matplotlib.pyplot.scatter(MLS.cluster_centers_[:,0] , MLS.cluster_centers_[:,1] , color = 'black')
+	matplotlib.pyplot.title('Ramachandran Plot')
+	matplotlib.pyplot.xlabel('Phi Angels')
+	matplotlib.pyplot.ylabel('Psi Angels')
+	matplotlib.pyplot.ylim(-180 , 180)
+	matplotlib.pyplot.xlim(-180 , 180)
+	matplotlib.pyplot.show()
+	#Print values
+	print('Loop cluster centers:\n' , MLL.cluster_centers_ , '\n')
+	print('Helix cluster centers:\n' , MLH.cluster_centers_ , '\n')
+	print('Strand cluster centers:\n' , MLS.cluster_centers_ , '\n')
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Database()
 #RamaPlot('PDBDatabase' , 1)
@@ -503,3 +546,4 @@ def Average(directory_to_search , plot_bool , show_plot):
 #Probability(TheList , 1 , 1)
 #Length('PDBDatabase' , 1 , 1)
 #Average('PDBDatabase' , 1 , 1)
+KM('RamaPlot.csv')
