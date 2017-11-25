@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os , gzip , warnings , itertools , numpy , Bio.PDB , matplotlib.pyplot , mpl_toolkits.mplot3d , pandas
+import os , gzip , warnings , itertools , numpy , Bio.PDB , pandas , sklearn.cluster , matplotlib.pyplot , mpl_toolkits.mplot3d
 #--------------------------------------------------------------------------------------------------------------------------------------
 #Functions
 

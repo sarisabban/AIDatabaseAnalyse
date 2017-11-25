@@ -4,7 +4,7 @@ A script that uses Machine Learning to analyse all protein structures in the Pro
 ## Requirements:
 1. Use the following command (in GNU/Linux) to install all necessary programs and python modules for this script to run successfully:
 
-`sudo apt update && sudo apt install python3-pip DSSP gnuplot && sudo pip3 install biopython`
+`sudo apt update && sudo apt install python3-pip python3-tk DSSP gnuplot && sudo pip3 install biopython numpy scipy pandas scikit-learn matplotlib`
 
 ## Description:
 This is a script that uses Machine Learning to analyse all protein structures in the Protein DataBank (PDB) database. It primary focus is as follows:
