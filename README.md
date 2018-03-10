@@ -18,5 +18,5 @@ This is a script that uses Machine Learning to analyse all protein structures in
 `python3 AIDatabaseAnalyse.py`
 
 2. Computation time is very long (around 72 hours), and around +100GB of disk space is needed (mainly used to download and manipulate the PDB database).
-3. The Script will result in the following files:
-* 
+
+**This script got replaced by the more advanced [AIDeNovo](https://github.com/sarisabban/AIDeNovo) script**
